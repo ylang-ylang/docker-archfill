@@ -30,7 +30,7 @@ DOCKERHUB_TOKEN
 
 ## Manual Build
 
-Run the `Build Recipe` workflow with:
+Run the `Manual Build Recipe` workflow with:
 
 ```text
 recipe: softether-vpnserver
@@ -64,12 +64,15 @@ moving_tags: smoke
 image_override: yourname/archfill-smoke
 ```
 
-## Follow Releases
+## Scheduled Release Following
 
-The `Follow Releases` workflow checks recipes with `upstream.type:
+The `Scheduled Follow Releases` workflow checks recipes with `upstream.type:
 github_release`. If `<image>:<latest-release-tag>` already exists, it skips the
 build. If the tag does not exist, it builds and pushes the version tag and the
 recipe's moving tags.
+
+Scheduled release following only builds on `main` or `case/*/*` branches. Other
+branches return an empty build matrix.
 
 ## Add A Recipe
 
