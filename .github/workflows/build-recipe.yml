@@ -15,6 +15,10 @@ on:
         description: Optional comma-separated moving tags, for example stable,latest
         required: false
         type: string
+      image_override:
+        description: Optional image name to use instead of recipe.yaml image
+        required: false
+        type: string
   workflow_call:
     inputs:
       recipe:
@@ -24,6 +28,9 @@ on:
         required: true
         type: string
       moving_tags:
+        required: false
+        type: string
+      image_override:
         required: false
         type: string
 
@@ -46,7 +53,8 @@ jobs:
           scripts/recipe-metadata.sh \
             "${{ inputs.recipe }}" \
             "${{ inputs.version }}" \
-            "${{ inputs.moving_tags }}" >> "$GITHUB_OUTPUT"
+            "${{ inputs.moving_tags }}" \
+            "${{ inputs.image_override }}" >> "$GITHUB_OUTPUT"
 
   build:
     needs: metadata

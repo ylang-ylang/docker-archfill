@@ -4,6 +4,7 @@ set -eu
 recipe="${1:?usage: recipe-metadata.sh <recipe>}"
 version="${2:-}"
 moving_tags="${3:-}"
+image_override="${4:-}"
 
 image="$(scripts/recipe-field.sh "$recipe" image)"
 dockerfile="$(scripts/recipe-field.sh "$recipe" dockerfile)"
@@ -11,10 +12,16 @@ context="$(scripts/recipe-field.sh "$recipe" context)"
 version_arg="$(scripts/recipe-field.sh "$recipe" version_arg)"
 platforms="$(scripts/recipe-list-field.sh "$recipe" platforms | paste -sd, -)"
 
-if [ "$image" = "CHANGE_ME/softether-vpnserver" ]; then
+if [ -n "$image_override" ]; then
+  image="$image_override"
+fi
+
+case "$image" in
+  CHANGE_ME|CHANGE_ME/*|*/CHANGE_ME)
   echo "recipe $recipe has placeholder image; edit recipes/$recipe/recipe.yaml" >&2
   exit 2
-fi
+  ;;
+esac
 
 if [ -z "$moving_tags" ]; then
   moving_tags="$(scripts/recipe-list-field.sh "$recipe" moving_tags | paste -sd, -)"
@@ -38,4 +45,3 @@ IFS="$old_ifs"
   echo "platforms=$platforms"
   echo "tags=$tags"
 }
-

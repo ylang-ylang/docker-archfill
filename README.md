@@ -14,6 +14,7 @@ The repository is generic by design:
 
 | Recipe | Upstream | Image |
 | --- | --- | --- |
+| `archfill-smoke` | local smoke recipe | override at workflow runtime |
 | `softether-vpnserver` | `SoftEtherVPN/SoftEtherVPN_Stable` | set in `recipes/softether-vpnserver/recipe.yaml` |
 
 ## Required Secrets
@@ -35,6 +36,7 @@ Run the `Build Recipe` workflow with:
 recipe: softether-vpnserver
 version: v4.43-9799-rtm
 moving_tags: stable,latest
+image_override: yourname/archfill-smoke
 ```
 
 The workflow builds:
@@ -50,6 +52,16 @@ and pushes:
 <image>:<version>
 <image>:stable
 <image>:latest
+```
+
+Use `archfill-smoke` first to test Docker Hub credentials and the generic
+multi-arch workflow with a tiny Alpine-based image:
+
+```text
+recipe: archfill-smoke
+version: 0.1.0
+moving_tags: smoke
+image_override: yourname/archfill-smoke
 ```
 
 ## Follow Releases
@@ -87,4 +99,3 @@ upstream:
 moving_tags:
   - latest
 ```
-

@@ -1,0 +1,11 @@
+name: archfill-smoke
+image: CHANGE_ME/archfill-smoke
+dockerfile: Dockerfile
+context: .
+version_arg: ARCHFILL_SMOKE_VERSION
+platforms:
+  - linux/amd64
+  - linux/arm64
+moving_tags:
+  - smoke
+
