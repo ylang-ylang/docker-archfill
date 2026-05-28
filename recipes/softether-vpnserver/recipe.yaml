@@ -1,0 +1,15 @@
+name: softether-vpnserver
+image: CHANGE_ME/softether-vpnserver
+dockerfile: Dockerfile
+context: .
+version_arg: SOFTETHER_VERSION
+platforms:
+  - linux/amd64
+  - linux/arm64
+upstream:
+  type: github_release
+  repo: SoftEtherVPN/SoftEtherVPN_Stable
+moving_tags:
+  - stable
+  - latest
+

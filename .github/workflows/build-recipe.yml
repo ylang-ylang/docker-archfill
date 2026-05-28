@@ -1,0 +1,74 @@
+name: Build Recipe
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipe:
+        description: Recipe name under recipes/
+        required: true
+        type: string
+      version:
+        description: Upstream version or tag to build
+        required: true
+        type: string
+      moving_tags:
+        description: Optional comma-separated moving tags, for example stable,latest
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      recipe:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      moving_tags:
+        required: false
+        type: string
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+      dockerfile: ${{ steps.meta.outputs.dockerfile }}
+      context: ${{ steps.meta.outputs.context }}
+      version_arg: ${{ steps.meta.outputs.version_arg }}
+      platforms: ${{ steps.meta.outputs.platforms }}
+      tags: ${{ steps.meta.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve recipe metadata
+        id: meta
+        run: |
+          scripts/recipe-metadata.sh \
+            "${{ inputs.recipe }}" \
+            "${{ inputs.version }}" \
+            "${{ inputs.moving_tags }}" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: metadata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ needs.metadata.outputs.context }}
+          file: ${{ needs.metadata.outputs.dockerfile }}
+          platforms: ${{ needs.metadata.outputs.platforms }}
+          push: true
+          build-args: |
+            ${{ needs.metadata.outputs.version_arg }}=${{ inputs.version }}
+          tags: ${{ needs.metadata.outputs.tags }}

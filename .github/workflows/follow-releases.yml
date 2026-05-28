@@ -1,0 +1,72 @@
+name: Follow Releases
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * *"
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.discover.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Discover builds
+        id: discover
+        run: |
+          set -eu
+          rows=""
+          for dir in recipes/*; do
+            [ -d "$dir" ] || continue
+            recipe="${dir#recipes/}"
+            upstream_type="$(scripts/recipe-field.sh "$recipe" type 2>/dev/null || true)"
+            repo="$(awk '
+              /^upstream:[[:space:]]*$/ { in_upstream = 1; next }
+              in_upstream && /^[^[:space:]]/ { exit }
+              in_upstream && /^[[:space:]]*repo:[[:space:]]*/ {
+                sub("^[[:space:]]*repo:[[:space:]]*", "")
+                print
+                exit
+              }
+            ' "$dir/recipe.yaml")"
+            type="$(awk '
+              /^upstream:[[:space:]]*$/ { in_upstream = 1; next }
+              in_upstream && /^[^[:space:]]/ { exit }
+              in_upstream && /^[[:space:]]*type:[[:space:]]*/ {
+                sub("^[[:space:]]*type:[[:space:]]*", "")
+                print
+                exit
+              }
+            ' "$dir/recipe.yaml")"
+            if [ "$type" != "github_release" ]; then
+              continue
+            fi
+            version="$(scripts/github-latest-release.sh "$repo")"
+            image="$(scripts/recipe-field.sh "$recipe" image)"
+            if [ "$image" = "CHANGE_ME/softether-vpnserver" ]; then
+              echo "skip $recipe: placeholder image" >&2
+              continue
+            fi
+            if scripts/docker-tag-exists.sh "$image" "$version"; then
+              echo "skip $recipe: $image:$version already exists"
+              continue
+            fi
+            row="$(jq -nc --arg recipe "$recipe" --arg version "$version" '{recipe: $recipe, version: $version}')"
+            rows="${rows}${rows:+,}$row"
+          done
+          echo "matrix={\"include\":[$rows]}" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: discover
+    if: needs.discover.outputs.matrix != '{"include":[]}'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+    uses: ./.github/workflows/build-recipe.yml
+    with:
+      recipe: ${{ matrix.recipe }}
+      version: ${{ matrix.version }}
+    secrets: inherit
+
